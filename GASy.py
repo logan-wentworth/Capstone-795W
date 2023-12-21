@@ -12,7 +12,6 @@ import urllib.request
 import argparse
 import os
 
-#Add an option TO run the assmembly portion and removse -s
 #Add an option to pull from 16S blast or take manually entered ID and then efetch reference
 parser = argparse.ArgumentParser(description="Assemble your genome! Best used with nohup and '&' as this program is time consuming")
 parser.add_argument("forward", help="Your forward fastq file to be processed")
@@ -22,8 +21,8 @@ parser.add_argument("--length", "-l", help="Length cutoff for genome assemblyfil
 parser.add_argument("--output", "-o", action="store_true", help="Make a new directory where relevant files will be stored")
 parser.add_argument("--plot", "-p", action="store_true", help="Uses blobtool and generates a chart to visualize remaining contigs")
 parser.add_argument("--quality", "-q", action="store_true", help="Uses Quast and generates a quality report from filtered genome")
-parser.add_argument("--reference", "-r", help="Reference genome if indexing and mapping is desired")
-parser.add_argument("--skip", "-s", action="store_true", help="Skips the assembly and annotation if already completed prior")
+parser.add_argument("--reference", "-r", default="spades_assembly/contigs.fasta", help="Reference genome for indexing, otherwise will proceed with de novo")
+parser.add_argument("--skip", "-s", action="store_true", help="Skips the core program if completed prior and only quast or blobplot desired")
 args = parser.parse_args()
 
 if args.skip is False:
@@ -35,8 +34,6 @@ if args.skip is False:
     subprocess.run("makeblastdb -in spades_assembly/contigs.fasta -dbtype nucl -out contigs_db", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     subprocess.run("blastn -query 16S_sequence.fasta -db contigs_db -out 16S_vs_contigs.tsv -outfmt 6", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     subprocess.run("blob_blast.sh spades_assembly/contigs.fasta", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    
-if args.reference is not None:
     subprocess.run("bwa index {0}".format(args.reference), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     subprocess.run("bwa mem -t 24 {0} trimmed-reads/{1} trimmed-reads/{2} > raw_mapped.sam".format(args.reference, args.forward, args.reverse), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     subprocess.run("samtools view -@ 24 -Sb raw_mapped.sam | samtools sort -@ 24 - sorted_mapped", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
